@@ -1,0 +1,11 @@
+- hosts: "{{ AnsibleServer }}"
+  tasks:
+  - name: EmailNotification for One Server
+    become: yes
+    script: /etc/ansible/roles/script/emailNotification.py {{ receivers }} {{ smtpserver }} "Email Subject ADODDLE-PROD-EU DEPLOYMENT PROCESS SUCCESSFULFor Email <html><body><table style='border:1px solid' align='center' bgcolor='#70AD47' style='width:50%'><tr><font size='3' color='white' face='calibri'><th colspan='2' align='center'>ADODDLE<BR>PROD<BR>NLWEB01</th></font></tr><tr align='center' bgcolor='#E2EFD9'><font size='3' color='black' face='calibri'><td width=50%>MULTIPLE INDEX FOUND</td><td width=50%>&#9888;</td></font></tr><tr align='center' bgcolor='#E2EFD9'><font size='3' color='black' face='calibri'><td width=50%>SERVICE STOPPED</td><td width=50%> &#9989;</td></font></tr><tr align='center' bgcolor='#E2EFD9'><font size='3' color='black' face='calibri'><td width=50%>STATIC FILES</td><td width=50%>&#9989;</td></font></tr><tr align='center' bgcolor='#E2EFD9'><font size='3' color='black' face='calibri'><td width=50%>SERVICE STARTED</td><td width=50%> &#9989;</td></font></tr><tr align='center' bgcolor='#E2EFD9'><font size='3' color='black' face='calibri'><td width=50%>TIME TAKEN TO DEPLOY/FAIL/UNDEPLOY</td><td width=50%>50 Seconds</td></font></tr><tr align='center' bgcolor='#E2EFD9'><font size='3' color='black' face='calibri'><td width=50%>ONLINE</td><td width=50%>&#9989;</td></font></tr><tr align='center' bgcolor='#E2EFD9'><font size='3' color='black' face='calibri'><td width=50%>DEPLOYMENT STATUS</td><td width=50%>SUCCESSFUL<BR> &#9989;</td></font></tr></table></body></html><br><br>"
+    register: EmailOutput
+    args:
+     executable: python3
+  - name: OutputOfEmailNotification
+    debug:
+     msg: " {{ EmailOutput.stdout_lines }} "

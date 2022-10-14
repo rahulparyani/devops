@@ -1,0 +1,13 @@
+---
+- hosts: "{{ server }}"
+  tasks:
+  - name: Copy Adoddlesite before release
+    become: yes
+    script: /etc/ansible/roles/script/adoddlesiteBeforeRelease.py "false" "false" "false" "false" "false" "false" "false" "false" {{ server }} {{ app }} {{ env }} {{ serviceName }} {{ dc }} {{ staticFolder }} {{ rtdFolder }} {{ rtdPath }} {{ earName }} "false" {{ prvfle }} {{ receivers }} {{ smtpserver }}
+    register: FirstServerStatus
+    args:
+     executable: python3
+  - name: FirstServerOutPut
+    debug:
+     msg: "{{ FirstServerStatus.stdout_lines }}"
+    when: "{{ FirstServerStatus.stdout is defined }}"

@@ -1,0 +1,9 @@
+FROM openjdk:8-jdk-alpine
+RUN apk add ttf-dejavu
+CMD mkdir ./myinvoices
+
+COPY ./myinvoices ./myinvoices
+
+WORKDIR "/myinvoices"
+
+ENTRYPOINT ["java","-jar","MyInvoices-0.0.1-SNAPSHOT.war","--spring.config.location=file:application.properties"]

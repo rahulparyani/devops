@@ -1,0 +1,94 @@
+pipeline {
+    agent any
+
+    stages {
+        stage(&apos;Properties Generation&apos;){
+            steps{
+                script{
+                    if (params.Properties){
+                        build job: &apos;PropertiesGeneration&apos;, parameters: [string(name: &apos;appName&apos;, value: &quot;${Adoddle1}&quot;), string(name: &apos;AppJobName&apos;, value: &apos;Adoddle1&apos;), string(name: &apos;isDeployProperties&apos;, value: &apos;true&apos;)]
+                    }
+                    else{
+                        echo &quot;Deployment not ticked&quot;
+                    }
+                }
+            }
+        }
+        stage(&apos;Copy to RTD&apos;){
+            steps{
+                script{
+                    if(params.Conf || params.Configuration || params.Lib ||  params.Properties || params.Ear || params.Static || params.DynamicJars){
+                        build job: &apos;CopyToRTD&apos;, parameters: [string(name: &apos;rtdFolder&apos;, value: &apos;Adoddle&apos;)]
+                    }
+                    else{
+                        echo &apos;Copy not required&apos;
+                    }
+                }
+            }
+        }
+        stage(&apos;Deployment&apos;){
+            agent {label &apos;LinuxNode&apos;}
+            steps{
+                script{
+                    if(params.Restart || params.Conf || params.Configuration || params.Lib ||  params.Properties || params.Ear || params.Static || params.DynamicJars){
+                        sh &apos;&apos;&apos;
+                        pwd
+                        echo $USER
+                        
+                        cd /etc/ansible/roles/yaml/
+                        pwd
+                        
+                        serverForsingle=${Server}
+                        echo $serverForsingle
+                        
+                        if [ &quot;$serverForsingle&quot; == &quot;All&quot; ] ; then
+                            echo for all server
+                            sudo ansible-playbook deploymentWildFlyFor2.yaml --extra-vars &quot;${AlO} ${Adoddle1}&quot;
+                        else
+                            echo for single server
+                            newString=${Adoddle1}
+                            echo $newString
+                            delimiter=&quot;app=&quot;
+                            string=$newString$delimiter
+                            myarray=()
+                            while [[ $string ]]; do
+                            myarray+=( &quot;${string%%&quot;$delimiter&quot;*}&quot; )
+                            string=${string#*&quot;$delimiter&quot;}
+                            done
+                            echo ${myarray[1]}
+                            finalString=&quot;server1=&quot;
+                            echo &quot;after&quot;
+                            finalString+=$serverForsingle
+                            finalString+=&quot; app=&quot;
+                            finalString+=${myarray[1]}
+                            echo $finalString
+                            sudo ansible-playbook deploymentWildFlyFor1.yaml --extra-vars &quot;${AlO} $finalString&quot;
+                        
+                        fi
+                        &apos;&apos;&apos;
+                    }
+                    else{
+                        echo &quot;Nothing Selected&quot;
+                    }
+                }
+            }
+        }
+        stage(&apos;Purge&apos;){
+            steps {
+                script {
+                    if(params.Purge){
+                        build wait: false, job: &apos;EdgeCastForJenkins-Pipeline&apos;, parameters: [string(name: &apos;appName&apos;, value: &apos;Adoddle1&apos;)]
+                    }
+                    else{
+                        echo &quot;Purge skipped since it is not selected&quot;
+                    }
+                }
+            }
+        }
+    }
+    post{
+        always{
+            emailext attachLog: true, body: &apos;${DEFAULT_CONTENT}&apos;, compressLog: true, subject: &apos;${DEFAULT_SUBJECT}&apos;, to: &apos;${receivers}&apos;
+        }
+    }
+}

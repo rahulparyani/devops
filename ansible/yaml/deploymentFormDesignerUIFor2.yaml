@@ -1,0 +1,80 @@
+---
+- hosts: "{{ server1 }}"
+  tasks:
+  - name: First Server
+    become: yes
+    script: /etc/ansible/roles/script/deploymentFormDesignerUI.py {{ Restart }} {{ Static }} {{ server1 }} {{ app }} {{ env }} {{ serviceName }} {{ dc }} {{ staticFolder }} {{ rtdFolder }} {{ rtdPath }} {{ earName }} "false" {{ prvfle }}
+    register: FirstServerStatus
+    args:
+     executable: python3
+  - name: FirstServerOutPut
+    debug:
+     msg: "{{ FirstServerStatus.stdout_lines }}"
+    when: "{{ FirstServerStatus.stdout is defined }}"
+  - name: count
+    debug:
+     msg: "{{ FirstServerStatus.stdout.find('Go for next instance') }}"
+    when: "{{ FirstServerStatus.stdout is defined }}"
+
+- hosts: "{{ server2 }}"
+  tasks:
+  - name: Second Server
+    become: yes  
+    script: /etc/ansible/roles/script/deploymentFormDesignerUI.py {{ Restart }} {{ Static }} {{ server2 }} {{ app }} {{ env }} {{ serviceName }} {{ dc }} {{ staticFolder }} {{ rtdFolder }} {{ rtdPath }} {{ earName }} "true" {{ prvfle }}
+    register: SecondServerStatus
+    ignore_errors: True
+    args:
+     executable: python3
+    when: "{{ hostvars[server1].FirstServerStatus.stdout.find('Go for next instance') != -1 }}"
+    notify:
+    - SecondServerOutPut
+
+  handlers:
+  - name: SecondServerOutPut
+    debug:
+     msg: "{{ SecondServerStatus.stdout_lines }}"
+
+  - name: count
+    debug:
+     msg: "{{ SecondServerStatus.stdout.find('Go for next instance') }}"
+
+- hosts: "{{ AnsibleServer }}"
+  tasks:
+  - name: EmailNotification for One Server
+    become: yes
+    script: /etc/ansible/roles/script/emailNotification.py {{ receivers }} {{ smtpserver }} "{{ hostvars[server1].FirstServerStatus.stdout }}"
+    register: EmailOutput
+    args:
+     executable: python3
+    when: "{{ hostvars[server1].FirstServerStatus.stdout is defined }} and {{ hostvars[server2].SecondServerStatus.stdout is not defined }}"
+    notify:
+    - OutputOfEmailNotification
+  handlers:
+  - name: OutputOfEmailNotification
+    debug:
+     msg: " {{ EmailOutput.stdout_lines }} "
+
+- hosts: "{{ AnsibleServer }}"
+  tasks:
+  - name: EmailNotification for Two Server
+    become: yes
+    script: /etc/ansible/roles/script/emailNotification.py {{ receivers }} {{ smtpserver }} "{{ hostvars[server1].FirstServerStatus.stdout }}" "{{ hostvars[server2].SecondServerStatus.stdout }}"
+    register: EmailOutput
+    args:
+     executable: python3
+    when: "{{ hostvars[server1].FirstServerStatus.stdout is defined }} and {{ hostvars[server2].SecondServerStatus.stdout is defined }}"
+    notify:
+    - OutputOfEmailNotification
+  handlers:
+  - name: OutputOfEmailNotification
+    debug:
+     msg: " {{ EmailOutput.stdout_lines }} "
+
+- hosts: "{{ AnsibleServer }}"
+  tasks:
+  - name: Build Status
+    become: yes
+    script: /etc/ansible/roles/script/buildStatusFY.py
+    args:
+     executable: python3
+    when: "{{ hostvars[server1].FirstServerStatus.stdout.find('Go for next instance') == -1 }} or {{ hostvars[server2].SecondServerStatus.stdout.find('Go for next instance') == -1 }}"

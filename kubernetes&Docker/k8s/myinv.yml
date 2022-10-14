@@ -1,0 +1,53 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: myinvoices-deployment
+  labels:
+    app: myinvoices
+spec:
+  minReadySeconds: 10
+  replicas: 1
+  selector:
+    matchLabels:
+      app: myinvoices
+  template:
+    metadata:
+      labels:
+        app: myinvoices
+    spec:
+      containers:
+      - name: myinvoices
+        image: rahulparyani/myprivaterepo:myinv1
+        env:
+        - name: SPRING_DATASOURCE_URL
+          valueFrom:
+            configMapKeyRef:
+              name: myinvoice-configmap
+              key: database_url
+        - name: SPRING_DATASOURCE_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: mysql-secret
+              key: mysql-password
+        - name: SPRING_DATASOURCE_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: mysql-secret
+              key: mysql-username
+        ports: 
+          - containerPort: 8080
+      imagePullSecrets:
+      - name: regcred
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: myinvoice-service
+spec:
+  selector:
+    app: myinvoices
+  ports:
+    - protocol: TCP
+      port: 8080
+      targetPort: 8080
+    
