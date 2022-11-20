@@ -1,4 +1,13 @@
 terraform {
+
+  cloud {
+    organization = "RahulParyani"
+
+    workspaces {
+      name = "test-project"
+    }
+  }
+
   required_providers {
     aws = {
       source  = "hashicorp/aws"
@@ -62,7 +71,7 @@ resource "aws_security_group" "my-sg" {
     security_groups  = []
     self             = false
     }, {
-    cidr_blocks      = ["49.34.232.11/32"]
+    cidr_blocks      = ["49.34.186.28/32"]
     description      = "SSH on my IP"
     from_port        = 22
     to_port          = 22
@@ -98,4 +107,8 @@ resource "aws_instance" "my-web" {
   vpc_security_group_ids = [ aws_security_group.my-sg.id ]
   subnet_id       = aws_subnet.my-public-subnet.id
   user_data = file("user-data.sh")
+}
+
+output "public_ip" {
+  value = aws_instance.my-web.public_ip
 }

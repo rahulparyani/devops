@@ -32,6 +32,6 @@ build/
 
 *.gz
 src/main/resources/application.properties
-TerraformAssociate/.terraform/
+*/.terraform/
 *.terraform.lock.hcl
 terraform.tfstate
